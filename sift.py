@@ -2,17 +2,34 @@ import numpy as np
 import cv2 as cv
 from timeit import default_timer as timer
 
-
+#Minimum count of matches
 MIN_MATCH_COUNT = 4
 
+#Start timer
 start = timer()
 
+#Importing the images 
+# TODO - Take in the images from the FLASK web app
 img1_color = cv.imread('images/Image01_25pc.jpeg')
 img2_color = cv.imread('images/Image02_25pc.jpeg')
 
+# Gray scaling the images
 img1 = cv.cvtColor(img1_color, cv.COLOR_BGR2GRAY)
 img2 = cv.cvtColor(img2_color, cv.COLOR_BGR2GRAY)
 
+
+# Setting up the mask
+# TODO - Test the masking and the points of the polygon
+mask = np.zeros(img1.shape[:2], dtype="unit8")
+# Creating the polygon points to be used
+polygon_pts = ([[5,2047], [1535,2047], [1071,1172], [556,1172]],np.int32)
+polygon_pts = polygon_pts.reshape((-1,1,2)) # Reshape rearranges the array
+# Creating the polygon
+cv.polylines(mask,[polygon_pts],True,(0,0,0))
+
+# Applying the mask
+masked = cv.bitwise_and(img1, img1, mask=mask)
+# End of the timer
 end = timer()
 
 t1 = end-start
