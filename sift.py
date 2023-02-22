@@ -10,8 +10,8 @@ start = timer()
 
 #Importing the images 
 # TODO - Take in the images from the FLASK web app
-img1_color = cv.imread('images/Image01_25pc.jpeg')
-img2_color = cv.imread('images/Image02_25pc.jpeg')
+img1_color = cv.imread('images/Image01_50pc.jpeg')
+img2_color = cv.imread('images/Image02_50pc.jpeg')
 
 # Gray scaling the images
 img1 = cv.cvtColor(img1_color, cv.COLOR_BGR2GRAY)
@@ -19,16 +19,15 @@ img2 = cv.cvtColor(img2_color, cv.COLOR_BGR2GRAY)
 
 
 # Setting up the mask
-# TODO - Test the masking and the points of the polygon
-mask = np.zeros(img1.shape[:2], dtype="unit8")
-# Creating the polygon points to be used
-polygon_pts = ([[5,2047], [1535,2047], [1071,1172], [556,1172]],np.int32)
-polygon_pts = polygon_pts.reshape((-1,1,2)) # Reshape rearranges the array
-# Creating the polygon
-cv.polylines(mask,[polygon_pts],True,(0,0,0))
+contours = np.array([[0,1024], [265,590], [503,590], [768,1024]]) #w,h
+image = np.zeros((1024,768), dtype='uint8') #h,w
+cv.fillPoly(image, pts = [contours], color =(255,255,255))
 
 # Applying the mask
-masked = cv.bitwise_and(img1, img1, mask=mask)
+masked1 = cv.bitwise_and(img1, img1, mask=image)
+masked2 = cv.bitwise_and(img2, img2, mask=image)
+
+
 # End of the timer
 end = timer()
 
@@ -68,8 +67,8 @@ sift = cv.SIFT_create(nfeatures=0,              # 0
                       sigma=1.6)                # 1.6
 
 # find the key points and descriptors with SIFT
-kp1, des1 = sift.detectAndCompute(img1, None)
-kp2, des2 = sift.detectAndCompute(img2, None)
+kp1, des1 = sift.detectAndCompute(masked1, None)
+kp2, des2 = sift.detectAndCompute(masked2, None)
 
 end = timer()
 
@@ -101,12 +100,24 @@ print('Time to get matches: ', t3, 's', sep='')
 
 print('\nTotal Time: ', '{:.5f}s'.format((t1+t2+t3)))
 
+
 if len(good) >= MIN_MATCH_COUNT:
 
     src_pts = np.float32([kp1[m.queryIdx].pt for m in good])
     dst_pts = np.float32([kp2[m.trainIdx].pt for m in good])
 
     H, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 1.0)
+
+    matchesMask = mask.ravel().tolist()
+
+    draw_params = dict(matchColor = (0,255,0), # draw matches in green color
+                   singlePointColor = None,
+                   matchesMask = matchesMask, # draw only inliers
+                   flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    img3 = cv.drawMatches(masked1,kp1,masked2,kp2,good,None,**draw_params)
+
+    cv.imshow("mapped", img3)
+    cv.waitKey(0)
 
     transformed_points = cv.perspectiveTransform(src_pts.reshape(-1, 1, 2), H)
 
