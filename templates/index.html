@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <head>
     <link rel="stylesheet" type="text/css" href="styles/UI.css">
+    <script src="upload.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="row">
             <div>
-                <h3>Live Streaming</h3>
-                <img src="{{url_for('video_feed')}}" width="100%">
+                <h3>Upload files for SIFT analysis</h3>
+            </div>
+            <div>
+                <input type="file" id="img1">
+                <input type="file" id="img2">
             </div>
             <!-- Buttons Div -->
             <div style="max-width: fit-content; margin:0 auto 0 auto;">
-                <button>Capture</button><button>Run SIFT</button>
+                <button onclick="uploadFiles()">Run SIFT</button>
             </div>
             <!-- Threshold Div  -->
             <div style="max-width: fit-content; margin:0 auto 0 auto;">
-                <button class="inc">+</button> <h1>VALUE</h1> <button class="dec">-</button>
+                <h2>Adjust Threshold</h2>
+                <button class="inc">+</button> <h3>VALUE</h3> <button class="dec">-</button>
             </div>
         </div>
     </div>
