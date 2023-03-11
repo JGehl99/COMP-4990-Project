@@ -1,4 +1,4 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, request
 import cv2
 
 # setup
@@ -29,6 +29,16 @@ def index():
 @app.route('/video_feed')
 def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# File upload
+@app.route('/upload', methods=['POST'])
+def file_upload():
+    img1 = request.files['img1']
+    img2 = request.files['img2']
+    # TODO Run SIFT here with these files
+
+
+
 
 #run
 if __name__ == "__main__":
