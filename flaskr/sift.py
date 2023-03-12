@@ -10,8 +10,8 @@ start = timer()
 
 #Importing the images 
 # TODO - Take in the images from the FLASK web app
-img1_color = cv.imread('images/Image01_50pc.jpeg')
-img2_color = cv.imread('images/Image02_50pc.jpeg')
+img1_color = cv.imread('static/images/Image01_50pc.jpeg')
+img2_color = cv.imread('static/images/Image02_50pc.jpeg')
 
 # Gray scaling the images
 img1 = cv.cvtColor(img1_color, cv.COLOR_BGR2GRAY)
