@@ -3,14 +3,17 @@ import cv2
 from timeit import default_timer as timer
 
 
-# Return results and time of sift() execution
+# Return result, execution time, and generated image from sift()
 def sift_setup(img1, img2, threshold):
 
     start = timer()
-    result = sift(img1, img2, threshold)
+    result, image = sift(img1, img2, threshold)
     end = timer()
 
-    return result, end-start
+    if result != 2:
+        return result, end-start, image
+    else:
+        return result, end-start, None
 
 
 def sift(img1_color, img2_color, threshold):
@@ -93,22 +96,13 @@ def sift(img1_color, img2_color, threshold):
                            flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
         img3 = cv2.drawMatches(masked1, kp1, masked2, kp2, good, None, **draw_params)
 
-        cv2.imshow("mapped", img3)
-        cv2.waitKey(0)
-
         transformed_points = cv2.perspectiveTransform(src_pts.reshape(-1, 1, 2), h)
-
-        for f, b in zip(transformed_points.reshape(-1, 2), dst_pts):
-            print(f, b)
 
         # Compare the transformed point with the destination points to check if it's on the plane
         if np.allclose(transformed_points.reshape(-1, 2), dst_pts, rtol=threshold):
-            print("The points are on the plane")
-            return True
+            return 1, img3
         else:
-            print("The points are not on the plane")
-            return False
+            return 0, img3
 
     else:
-        print("Not enough matches are found - {}/{}".format(len(good), min_match_count))
-        return False
+        return 2, None
