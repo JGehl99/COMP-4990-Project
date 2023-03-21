@@ -25,10 +25,11 @@ def sift(img1_color, img2_color, threshold):
     img1 = cv2.cvtColor(img1_color, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(img2_color, cv2.COLOR_BGR2GRAY)
 
+    height, width = img1.shape
     # Setting up the mask
-    contours = np.array([[0, 1024], [265, 590], [503, 590], [768, 1024]])  # w,h
-    image = np.zeros((1024, 768), dtype='uint8')  # h,w
-    cv2.fillPoly(image, pts=[contours], color=(255, 255, 255))
+    contours = np.array([[0, height], [width*0.35, height*0.58], [width*0.65, height*0.58], [width, height]])  # w,h
+    image = np.zeros((height, width), dtype='uint8')  # h,w
+    cv2.fillPoly(image, pts=np.int32([contours]), color=(255, 255, 255))
 
     # Applying the mask
     masked1 = cv2.bitwise_and(img1, img1, mask=image)
