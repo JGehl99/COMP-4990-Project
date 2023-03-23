@@ -4,36 +4,35 @@ from timeit import default_timer as timer
 
 
 # Return result, execution time, and generated image from sift()
-def sift_setup(img1, img2, threshold):
+def sift_setup(img1, img2, kp):
 
     start = timer()
-    result, image = sift(img1, img2, threshold)
+    result, image = sift(img1, img2, kp)
     end = timer()
 
-    if result != 2:
-        return result, end-start, image
-    else:
-        return result, end-start, None
+    return result, end-start, image
 
 
-def sift(img1_color, img2_color, threshold):
-
-    # Minimum count of matches
-    min_match_count = 4
+def sift(img1_color, img2_color, key_points):
 
     # Gray scaling the images
     img1 = cv2.cvtColor(img1_color, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(img2_color, cv2.COLOR_BGR2GRAY)
 
-    height, width = img1.shape
+    height, width = img2.shape
     # Setting up the mask
-    contours = np.array([[0, height], [width*0.35, height*0.58], [width*0.65, height*0.58], [width, height]])  # w,h
+    contours = np.array(
+        [[0, img2.shape[0]],
+         [img2.shape[1]*0.35, img2.shape[0]*0.40],
+         [img2.shape[1]*0.65, img2.shape[0]*0.40],
+         [img2.shape[1], img2.shape[0]]]
+    )  # w,h
+
     image = np.zeros((height, width), dtype='uint8')  # h,w
     cv2.fillPoly(image, pts=np.int32([contours]), color=(255, 255, 255))
 
     # Applying the mask
-    masked1 = cv2.bitwise_and(img1, img1, mask=image)
-    masked2 = cv2.bitwise_and(img2, img2, mask=image)
+    masked_img2 = cv2.bitwise_and(img2, img2, mask=image)
 
     # Initiate SIFT detector
 
@@ -65,11 +64,13 @@ def sift(img1_color, img2_color, threshold):
                            sigma=1.6)  # 1.6
 
     # find the key points and descriptors with SIFT
-    kp1, des1 = sift.detectAndCompute(masked1, None)
-    kp2, des2 = sift.detectAndCompute(masked2, None)
+    kp1, des1 = sift.detectAndCompute(img1, None)
+    kp2, des2 = sift.detectAndCompute(masked_img2, None)
 
+    # Index type
     flann_index_kdtree = 1
 
+    # Index and search parameters
     index_params = dict(algorithm=flann_index_kdtree, trees=5)
     search_params = dict(checks=50)
 
@@ -82,28 +83,52 @@ def sift(img1_color, img2_color, threshold):
         if m.distance < 0.7 * n.distance:
             good.append(m)
 
-    if len(good) >= min_match_count:
+    if len(good) > key_points:
 
-        src_pts = np.float32([kp1[m.queryIdx].pt for m in good])
-        dst_pts = np.float32([kp2[m.trainIdx].pt for m in good])
+        src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
+        dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
-        h, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 1.0)
+        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
 
-        matches_mask = mask.ravel().tolist()
+        matchesMask = mask.ravel().tolist()
+
+        h, w = img1.shape
+
+        transformed_points = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
+
+        dst = cv2.perspectiveTransform(transformed_points, M)
+        img2 = cv2.polylines(masked_img2, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)
 
         draw_params = dict(matchColor=(0, 255, 0),  # draw matches in green color
                            singlePointColor=None,
-                           matchesMask=matches_mask,  # draw only inliers
-                           flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-        img3 = cv2.drawMatches(masked1, kp1, masked2, kp2, good, None, **draw_params)
+                           matchesMask=matchesMask,  # draw only inliers
+                           flags=2)
 
-        transformed_points = cv2.perspectiveTransform(src_pts.reshape(-1, 1, 2), h)
+        img3 = cv2.drawMatches(img1, kp1, img2, kp2, good, None, **draw_params)
 
-        # Compare the transformed point with the destination points to check if it's on the plane
-        if np.allclose(transformed_points.reshape(-1, 2), dst_pts, rtol=threshold):
-            return 1, img3
-        else:
-            return 0, img3
+        return True, img3
 
     else:
-        return 2, None
+
+        image_bordered = cv2.copyMakeBorder(
+            src=img1,
+            top=0,
+            bottom=masked_img2.shape[0] - img1.shape[0],
+            left=0,
+            right=0,
+            borderType=cv2.BORDER_CONSTANT
+        )
+        image_bordered2 = cv2.copyMakeBorder(
+            image_bordered,
+            0,
+            0,
+            0,
+            50,
+            cv2.BORDER_CONSTANT,
+            None,
+            (255, 255, 255)
+        )
+
+        img3 = np.hstack((image_bordered2, masked_img2))
+
+        return False, img3

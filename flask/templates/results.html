@@ -14,16 +14,14 @@
                 <div class="card-body p-3 text-center">
                     <h3 class="text-center mb-5">COMP-4990A: Vision-Based Obstacle Detection Using OpenCV</h3>
                     <h4 class="text-center">Results</h4>
-                    {%  if data[0] == 1 %}
-                        <p class="text-center text-success">No Object Detected</p>
+                    {%  if data[0] %}
+                        <p class="text-center text-success">Object Detected</p>
                         <p class="text-center">Time: {{ '%0.3f'| format(data[1])}}s</p>
                         <img src="{{ data[2] }}" alt="Results" class="img-fluid">
-                    {% elif data[0] == 0 %}
-                        <p class="text-center text-danger">Object Detected</p>
+                    {% else %}
+                        <p class="text-center text-danger">Not Enough Key Points - No Object Detected</p>
                         <p class="text-center">Time: {{ '%0.3f'| format(data[1])}}s</p>
                         <img src="{{ data[2] }}" alt="Results" class="img-fluid">
-                    {% elif data[0] == 2 %}
-                        <p class="text-center text-danger">Not Enough Key Points Detected</p>
                     {% endif %}
                 </div>
             </div>

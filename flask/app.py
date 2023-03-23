@@ -30,15 +30,12 @@ def file_upload():
     if request.method == 'POST':
         img1 = img_upload_to_cv2(request.files['img1'].read())
         img2 = img_upload_to_cv2(request.files['img2'].read())
-        tolerance = int(request.form.get('tol'))
+        kp = float(request.form.get('kp'))
 
-        result, time, image = sift_setup(img1, img2, tolerance)
+        result, time, image = sift_setup(img1, img2, kp)
 
-        if result != 2:
-            cv2.imwrite(os.path.join(os.getcwd(), 'flask', 'static', 'images', (session['UUID'] + '.jpg')), image)
-            data = [result, time, url_for('static', filename='images/' + session['UUID'] + '.jpg')]
-        else:
-            data = [result]
+        cv2.imwrite(os.path.join(os.getcwd(), 'flask', 'static', 'images', (session['UUID'] + '.jpg')), image)
+        data = [result, time, url_for('static', filename='images/' + session['UUID'] + '.jpg')]
 
         return render_template('results.html', data=data)
 
