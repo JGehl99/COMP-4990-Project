@@ -20,6 +20,7 @@ def sift(img1_color, img2_color, key_points):
     img2 = cv2.cvtColor(img2_color, cv2.COLOR_BGR2GRAY)
 
     height, width = img2.shape
+
     # Setting up the mask
     contours = np.array(
         [[0, img2.shape[0]],
@@ -85,20 +86,29 @@ def sift(img1_color, img2_color, key_points):
 
     if len(good) > key_points:
 
+        # Get list of src and dst points into the proper format to use in findHomography()
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
+        # Calculate homographic matrix M and the list of matches used to calculate it (mask)
         M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
 
+        # Convert mask to list
         matchesMask = mask.ravel().tolist()
 
+        # Height and width of image1
         h, w = img1.shape
 
+        # Create np array the same size as img1
         transformed_points = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
 
+        # Map these points to img2 using the homographic matrix
         dst = cv2.perspectiveTransform(transformed_points, M)
+
+        # Draw box around where the points were mapped to on img2
         img2 = cv2.polylines(masked_img2, [np.int32(dst)], True, 255, 3, cv2.LINE_AA)
 
+        # Draw matches between img1 and img2
         draw_params = dict(matchColor=(0, 255, 0),  # draw matches in green color
                            singlePointColor=None,
                            matchesMask=matchesMask,  # draw only inliers
@@ -106,9 +116,12 @@ def sift(img1_color, img2_color, key_points):
 
         img3 = cv2.drawMatches(img1, kp1, img2, kp2, good, None, **draw_params)
 
+        # Return img3 which has the matches drawn on it
         return True, img3
 
     else:
+
+        # Else if there are not enough matches, concatenate the images together and return it with no matches drawn
 
         image_bordered = cv2.copyMakeBorder(
             src=img1,
